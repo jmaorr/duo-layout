@@ -40,6 +40,8 @@ For each screen, list the primary actions in order of use, most used first. Navi
 - The items at the bottom of the list are the ones that drop off.
 - Dropped items go into one overflow menu that you declare yourself.
 
+Mark each item as a **main action** (adding, the thing the screen is for) or an **accessory** (search, sort, the "…" menu). The order decides what stays; the mark decides where it sits (Rule 5).
+
 Write the list down before you build. It is the design. An agent should stop and get the list approved before it touches a layout.
 
 ### Rule 2: Declare the overflow, do not tune it
@@ -75,11 +77,21 @@ Use `Label` (or `Button("Title", systemImage:)`) and hide the title with `.label
 
 - Items that belong in the gutter: `.axisBehavior(.verticalPreferred)` with `.visibilityPriority(.high)`.
 - Items that belong in the top bar (a profile avatar, for example): `.axisBehavior(.horizontalOnly)`.
+- One item that must never overflow, whatever the room: `placement: .topBarPinnedTrailing` (iOS 27).
 - Items with `placement: .bottomBar` land at the far end of the gutter, next to the thumb. Use that for the most used action.
 - If your toolbar items matter more than the tab bar, set `.toolbarVerticalCompressionBehavior(.prefersToolbarItems)` on the view.
 - If you draw your own bar and do not want the gutter, set `.toolbarVerticalBehavior(.disabled)`.
 
 > **Browsa.** Back, forward and the page menu sit at the top of the gutter. New tab and tabs use `.bottomBar` and land by the thumb. The address stays in a capsule at the bottom of the page.
+
+**Main actions by the thumb, accessories at the top.** Adding an item is a main action. Search and the "…" menu are accessories: they sit together at the top of the gutter.
+
+**The gutter is one icon wide.** Two things break that:
+
+- A search field. Placed in the gutter it draws at full width and runs off the screen. Use `.searchToolbarBehavior(.minimize)` when there is a gutter, so search is a button.
+- A button with words ("Add to Shop"). It spills out over the content. Show the icon alone when there is a gutter, and keep the title for the menu.
+
+> **Shopa.** Search sat with Add and Categories at the thumb end. It moved up beside "…" as `DefaultToolbarItem(kind: .search, placement: .topBarTrailing)` with the minimised behaviour. The planner's "Add to Shop" became icon-only in the gutter.
 
 ### Rule 6: Nothing arrives late
 
@@ -97,6 +109,8 @@ Stop the tab bar minimising on scroll on the phone family:
 
 > **Torqa.** The bar minimised as Home scrolled, the page grew by 58 pt, a long list measured itself again, the bar came back, and the scroll stuck near the top.
 
+This is the one place the shipped code asks which device it is, and it is a behaviour choice, not a layout choice. Apple's guidance is to keep the device idiom out of layout decisions. If you would rather not read it at all, key the same line on the gutter: `gutterEdge != nil ? .never : .automatic`. That form is not yet proven in a shipped app.
+
 ### Rule 8: Paint behind the gutter
 
 The gutter is see-through. It shows whatever your view draws behind it, so the colour there is your job.
@@ -105,13 +119,30 @@ The gutter is see-through. It shows whatever your view draws behind it, so the c
 - Set the bar's colour scheme to match, so icons stay readable: `.toolbarColorScheme(isLight ? .light : .dark, for: .navigationBar)`.
 - Have a neutral colour ready for moments with no page (a tab grid, an empty state).
 - If a docked sidebar has its own tint, let the sidebar win and turn the page colour off while it is open.
-- Tint toolbar buttons with a neutral ink. An app-wide accent reaches gutter buttons unevenly.
+- The system's own icons cannot be tinted. Search, back and the sidebar button are black beside a gutter or a sidebar, whatever tint you set.
+- So tint your own toolbar buttons with the same neutral ink. Accent icons beside black ones look mismatched, and an app-wide accent reaches gutter buttons unevenly in any case.
+- Set that ink with `.tint`, placed after `.toolbar`. The bar's icons follow the tint at the point where the toolbar is attached; a `.foregroundStyle` on the icon is ignored. Put the accent back for the page with a second `.tint` placed before `.toolbar`:
+
+```swift
+content
+    .tint(accent)          // the page keeps the accent
+    .toolbar { items }
+    .tint(toolbarInk)      // the bar's icons: neutral beside a gutter or sidebar
+```
+
+- Keep the accent on a plain iPhone if that is the app's look: make the ink neutral only when there is a gutter or a sidebar.
 
 See [`snippets/GutterSurroundings.swift`](snippets/GutterSurroundings.swift).
 
 > **Browsa.** The web page's background colour runs under the gutter, as in Safari, and the status items flip between light and dark with it. While the tab gallery is up, the colour is the system's grouped background.
 >
+> **Shopa.** Orange "…", plus and categories sat beside a black search and a black sidebar button. All toolbar icons are now black beside the gutter or the sidebar, and orange on an ordinary iPhone. Buttons, chips and the calendar's plus keep the accent.
+>
 > **Torqa.** The tab shell's orange accent tinted "…" but not the bell beside it. Home's toolbar is now tinted with the primary text colour, and the page applies the accent again for its own content.
+
+One background per screen. A tab or section inside the screen should not paint its own fill with `ignoresSafeArea()`, or the header keeps the screen's colour while the body, and the strip under the gutter, turn another.
+
+> **Shopa.** The planner tab filled itself with the system grey. The header stayed in the list's colour and the calendar went grey. Removing the fill let the list's wallpaper show through, as on the other tabs.
 
 One limit: on iPad the system sidebar's grey is its own. No background and no `backgroundExtensionEffect` reaches it. Leave it alone, or build a custom sidebar.
 
@@ -178,6 +209,8 @@ Before the first measurement the container is 0 pt wide. If you default to compa
 
 Do not build a third layout for the Duo. The outer display uses your phone layout and the inner display uses your iPad layout. The differences are the gutter and the insets, and you handle those inside the two layouts.
 
+This means the open Duo shows every fault your iPad layout already has, to people who never owned an iPad. Run the iPad layout first and list what is wrong with it before you start. Otherwise old iPad faults look like new Duo bugs.
+
 ---
 
 ## 5. Folding
@@ -209,7 +242,21 @@ Selection, scroll position, the current page of a pager and any text being typed
 
 > **Torqa.** Home's segment bar and pager now stay on the same page across a fold.
 
-### Rule 18: One owner for a heavy view
+A fold builds the other layout for the first time, long after launch. So a layout must not wait for a launch event to show itself.
+
+> **Shopa.** The phone dashboard faded in when onboarding finished. Built later by a fold, it never saw that moment and stayed invisible: the title showed and the lists did not. It now shows at once if onboarding is already done.
+
+### Rule 18: In a split view, the sidebar is the navigation
+
+The iPad layout often comes from pushing phone pages into the detail column. On the open Duo that leaves three faults:
+
+- A destination chosen in the sidebar has a back button. Hide it: the sidebar already leads everywhere it would.
+- `.searchable` on the split view puts the field in the sidebar. Put it on the page being searched.
+- Tapping the row that is already selected does nothing, so the user cannot leave the pushed page. Clear the pushed page on the tap.
+
+> **Shopa.** Community was a page pushed over the selected list. It is now treated as a sidebar choice: highlighted while open, no back button, its own search, and any list row leaves it.
+
+### Rule 19: One owner for a heavy view
 
 If both layouts show the same web view or map, a host may only take it once the host is in a window. A host that takes it during creation can take it from the layout that is still on screen.
 
@@ -217,19 +264,21 @@ If both layouts show the same web view or map, a host may only take it once the 
 
 ## 6. Insets
 
-### Rule 19: Each edge on its own
+### Rule 20: Each edge on its own
 
 The gutter makes the side insets unequal. Never write `width - 2 * inset`. Read leading and trailing separately.
 
-### Rule 20: Full-width pagers span the insets
+### Rule 21: Full-width pagers span the insets
 
 A paging `ScrollView` pages by its full width. If each page is sized to the width inside the safe area, pages come up short by the width of the gutter, and the next page shows at the edge.
 
 Let the pager ignore the horizontal safe area, measure the side insets, and have each page put them back as safe-area padding. Pass the insets down in the environment for content that runs under the gutter (Rule 9).
 
+This is an exception. Everywhere else, do not read an inset and apply it yourself: a view's frame already starts inside the inset, so padding by the number you read counts it twice. Use `safeAreaInset(edge:)`, `safeAreaBar(edge:)` or `safeAreaPadding` and let the system place the content. The pager reads the insets only because it has stepped outside the safe area on purpose.
+
 See [`snippets/PagerSideInsets.swift`](snippets/PagerSideInsets.swift).
 
-### Rule 21: Measure outside the navigation stack
+### Rule 22: Measure outside the navigation stack
 
 Inside a `NavigationStack`, a bar that is being hidden still counts as safe area for a moment. Measure top insets outside the stack.
 
@@ -237,7 +286,7 @@ Inside a `NavigationStack`, a bar that is being hidden still counts as safe area
 
 ## 7. Keeping it buildable
 
-### Rule 22: One file for the Duo's APIs
+### Rule 23: One file for the Duo's APIs
 
 Put every call to a Duo-only API behind your own small wrapper, in one file. The rest of the app never names those APIs.
 
@@ -261,9 +310,17 @@ APIs used (iOS 27.0 and 27.1):
 
 ## 8. Testing
 
+- **Get it running early, then let the owner use it.** Reading the code finds some faults. Five minutes of use finds others that no search will: a control in the wrong place, a colour that is off, a page that never loads. Build a rough version, hand it over, and polish after.
+- **Check the project can resize at all.** It needs a launch screen, all four orientations on iPad, and no `UIRequiresFullScreen`. Xcode's `app-resizability` skill runs these three checks.
+- **Check every posture again after each fix.** A fix made for the open screen often leaves the closed one behind.
+- **Wait for the app to finish loading before you tap.** A tap that lands on a loading screen looks like a broken button.
 - **Add a launch argument that forces the layout** (`--layout compact` or `--layout wide`). UI tests and screenshots then need no real fold.
-- **Fold the simulator from Device Hub**, the app inside Xcode. Its device window has Closed and Open buttons. `simctl` has no fold command, and forcing the display off with it crashed SpringBoard.
-- **Check four states**: closed, open landscape, open portrait, and an iPad.
+- **Fold the simulator from Device Hub**, the app inside Xcode. Its device window has Closed and Open buttons. `simctl` has no fold command, and forcing the display off with it crashed SpringBoard. An agent whose simulator tool can set the posture should use that.
+- **Give each job its own Duo simulator.** Two sessions folding one simulator ruin each other's screenshots. The Duo needs its own runtime: list runtimes and pick the one made for it.
+- **Know which backend a test build uses.** A debug build that points at a staging server shows an empty account. That is not a layout bug, but it hides the screens that only look wrong with real data.
+- **Plan for the sign-in screen.** An agent cannot sign in to a real account. Add a debug launch argument that opens the app on sample data, or sign in on the simulator yourself before the agent checks the screens behind it.
+- **Check four states**: closed, half open, open landscape, open portrait, and then an iPad.
+- **Use Apple's own skill as well.** Xcode ships an `app-resizability` agent skill that finds `UIScreen.main`, idiom checks, orientation checks and symmetric-inset code. This playbook covers what to design; that skill covers what to remove.
 - **Fold while something is happening**: with the keyboard up, in the middle of a scroll, with a sheet open, on the second page of a pager.
 - **Confirm on a device before you chase a simulator glitch.** Blank paints during a fold showed up in the simulator and not on the phone.
 - **Start another app's Live Activity**, then look at your gutter.
@@ -273,15 +330,23 @@ APIs used (iOS 27.0 and 27.1):
 
 ## 9. Checklist
 
+Before you start
+- [ ] The project has a launch screen, all four iPad orientations, and no `UIRequiresFullScreen`
+- [ ] The existing iPad layout has been run and its faults listed
+
 Gutter
-- [ ] Each screen has a ranked list of primary actions
-- [ ] Overflow is your own `ToolbarOverflowMenu`
+- [ ] Each screen has a ranked list of primary actions, each marked main or accessory
+- [ ] Main actions sit by the thumb; search and "…" sit together at the top
+- [ ] Overflow is your own menu
 - [ ] The number of tabs is the same in every posture
 - [ ] Every toolbar button has a title
+- [ ] Search is a button, not a field, when there is a gutter
+- [ ] No button with words in the gutter
 - [ ] Nothing loads into the gutter after first layout
 - [ ] The tab bar does not minimise on the phone family
 - [ ] The page background runs under the gutter and the bar's colour scheme matches
-- [ ] Toolbar buttons use a neutral tint
+- [ ] One background per screen; no section paints its own
+- [ ] Toolbar icons use one neutral ink beside a gutter or sidebar, set with `.tint` after `.toolbar`
 - [ ] The no-gutter arrangement puts the top actions in a bottom bar
 
 Layout
@@ -294,7 +359,13 @@ Folding
 - [ ] Layouts swap with no animation
 - [ ] No transition has a source that exists in one layout only
 - [ ] Selection, scroll and pager page survive a fold
+- [ ] A layout built by a fold shows at once; it waits for no launch event
 - [ ] Heavy views have one owner
+
+Split view
+- [ ] A destination chosen in the sidebar has no back button
+- [ ] Search is attached to the page it searches, not to the split view
+- [ ] Tapping the selected sidebar row leaves a pushed page
 
 Insets
 - [ ] No `2 * inset` anywhere
@@ -304,4 +375,5 @@ Insets
 Build and test
 - [ ] Duo APIs are in one file with `#available` and `NO_DUO_SDK` stand-ins
 - [ ] A launch argument forces the layout
-- [ ] Checked closed, open landscape, open portrait and iPad
+- [ ] The owner has used a running build
+- [ ] Checked closed, half open, open landscape, open portrait and iPad, again after the last fix

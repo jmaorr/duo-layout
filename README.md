@@ -2,7 +2,7 @@
 
 A short guide to making a SwiftUI app feel at home on the iPhone Duo, written from three shipped apps.
 
-- **[PLAYBOOK.md](PLAYBOOK.md)** is the guide for people: 22 rules, each with its reason, and a checklist.
+- **[PLAYBOOK.md](PLAYBOOK.md)** is the guide for people: 23 rules, each with its reason, and a checklist.
 - **[skills/duo-layout](skills/duo-layout/SKILL.md)** is the same guide as a workflow for a coding agent.
 - **[snippets/](snippets/)** holds four small Swift files to copy and adapt.
 

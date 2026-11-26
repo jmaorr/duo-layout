@@ -1,6 +1,6 @@
 import SwiftUI
 
-// Every iPhone Duo API the app uses goes through this file. Playbook rules 5, 10 and 22.
+// Every iPhone Duo API the app uses goes through this file. Playbook rules 5, 10 and 23.
 //
 // Build with the NO_DUO_SDK compilation condition on a machine whose Xcode has no iOS 27.1 SDK
 // (CI, for example). The stand-ins below do nothing, and the rest of the app still compiles.
@@ -95,7 +95,7 @@ public extension ToolbarContent {
 // MARK: - Your own overflow menu
 
 /// The bottom of the ranked list: actions that do not earn a slot in the gutter. Before iOS 27
-/// there is no gutter, so the same actions are ordinary toolbar buttons.
+/// there is no gutter, so the same actions sit in an ordinary "…" menu.
 ///
 ///     .toolbar {
 ///         ToolbarItem(placement: .topBarTrailing) { NotificationsButton() }.pinnedToGutter()
@@ -123,10 +123,14 @@ public struct GutterOverflow<Actions: View>: ToolbarContent {
     }
 
     private var fallback: some ToolbarContent {
-        ToolbarItemGroup(placement: .topBarTrailing) {
-            // Titles stay on the buttons. A row built from an image alone comes up empty when the
-            // system moves it into a menu.
-            actions.labelStyle(.iconOnly)
+        ToolbarItem(placement: .topBarTrailing) {
+            // A menu, not loose buttons: five overflow actions must not land in the top bar of an
+            // ordinary iPhone. The label has a title, so the row is never empty if it moves.
+            Menu {
+                actions
+            } label: {
+                Label("More", systemImage: "ellipsis")
+            }
         }
     }
 }

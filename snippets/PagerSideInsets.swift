@@ -1,7 +1,7 @@
 import SwiftUI
 
 // A horizontal pager on a screen with a side inset: the Duo's gutter, or any iPhone in landscape.
-// Playbook rules 9, 19 and 20.
+// Playbook rules 9, 20 and 21.
 //
 // A paging ScrollView pages by its full width. Pages sized to the width inside the safe area come
 // up short by the inset, and the next page shows at the edge. So the pager spans the full width,

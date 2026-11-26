@@ -22,6 +22,10 @@ public extension View {
 
     /// One neutral ink for toolbar buttons. An app-wide accent reaches gutter buttons unevenly:
     /// one comes out tinted and the one beside it grey. Apply the accent again inside the page.
+    ///
+    /// Order matters. Call this after `.toolbar`, and put the page's own `.tint(accent)` before
+    /// `.toolbar`: the bar's icons follow the tint where the toolbar is attached, and ignore a
+    /// foreground style set on the icon.
     func neutralToolbarTint(_ ink: Color = .primary) -> some View {
         tint(ink)
     }
