@@ -64,7 +64,8 @@ public extension View {
 // MARK: - Where each toolbar item lives
 
 public extension ToolbarContent {
-    /// In the gutter, and never in the overflow menu. For the top of the ranked list.
+    /// In the gutter, and never in the overflow menu. For the top of the ranked list. Use it on a
+    /// `.bottomBar` item as well: that item then sits at the thumb end and stays out of overflow.
     @ToolbarContentBuilder func pinnedToGutter() -> some ToolbarContent {
         #if NO_DUO_SDK
         self
@@ -92,10 +93,59 @@ public extension ToolbarContent {
     }
 }
 
+// MARK: - Search as an accessory
+
+/// The system's search item, placed for the layout: with the "…" menu at the top of the gutter,
+/// or in the bottom bar where there is no gutter. Search is an accessory, so in the gutter it
+/// does not sit with the main actions by the thumb.
+///
+///     .searchable(text: $query)
+///     .gutterSearchBehavior()
+///     .toolbar {
+///         GutterSearchItem(hasGutter: gutterEdge != nil)
+///     }
+public struct GutterSearchItem: ToolbarContent {
+    private let hasGutter: Bool
+
+    public init(hasGutter: Bool) {
+        self.hasGutter = hasGutter
+    }
+
+    public var body: some ToolbarContent {
+        if #available(iOS 26.0, *) {
+            DefaultToolbarItem(kind: .search, placement: hasGutter ? .topBarTrailing : .bottomBar)
+        }
+    }
+}
+
+private struct GutterSearchBehavior: ViewModifier {
+    @Environment(\.gutterEdge) private var gutterEdge
+
+    func body(content: Content) -> some View {
+        if #available(iOS 26.0, *) {
+            // The gutter is one icon wide. A full search field there runs off the screen.
+            content.searchToolbarBehavior(gutterEdge != nil ? .minimize : .automatic)
+        } else {
+            content
+        }
+    }
+}
+
+public extension View {
+    /// Search as a button beside the gutter, and the system's usual field elsewhere. Put it on
+    /// the view that has `.searchable`.
+    func gutterSearchBehavior() -> some View {
+        modifier(GutterSearchBehavior())
+    }
+}
+
 // MARK: - Your own overflow menu
 
 /// The bottom of the ranked list: actions that do not earn a slot in the gutter. Before iOS 27
 /// there is no gutter, so the same actions sit in an ordinary "…" menu.
+///
+/// Despite the name, on iOS 27 this is the system's overflow menu on every device, an ordinary
+/// iPhone and an iPad included. Its "…" is always black and cannot be tinted.
 ///
 ///     .toolbar {
 ///         ToolbarItem(placement: .topBarTrailing) { NotificationsButton() }.pinnedToGutter()

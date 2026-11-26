@@ -105,8 +105,12 @@ private struct ResolvesLayoutClass: ViewModifier {
 }
 
 public extension View {
-    /// Put this on the root of each screen (each tab's content, each split column). The content
-    /// then reads `@Environment(\.layoutClass)`.
+    /// Put this where the layout is chosen. The content then reads `@Environment(\.layoutClass)`.
+    ///
+    /// - An app whose two layouts are a navigation stack and a split view: once, on the app's
+    ///   root view. Not on a split column: a column is narrower than the window and would call
+    ///   itself compact.
+    /// - An app with a tab view whose pages each choose their own layout: on each tab's content.
     func resolvesLayoutClass() -> some View {
         modifier(ResolvesLayoutClass())
     }
