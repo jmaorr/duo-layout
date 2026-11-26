@@ -83,6 +83,8 @@ Keep a notes file in the project (`DUO-NOTES.md`). The step 1 result, the audit,
 | A fold lands on the wrong item, or closes an open search | 17 |
 | Blank page or dead controls after unfolding | 15, 16, 19 |
 | Back button on a page chosen from the sidebar | 18 |
+| A sidebar row only responds on its empty space | 18 |
+| A sidebar destination closes as soon as it opens | 18 |
 | Search field appears in the sidebar | 18 |
 | Pager shows a sliver of the next page | 21 |
 | A chart that should run under the gutter stops at it | 9 |
@@ -100,5 +102,6 @@ Keep a notes file in the project (`DUO-NOTES.md`). The step 1 result, the audit,
 - **Reading the hinge angle for layout.** Measure the window.
 - **Setting an icon's colour with a foreground style.** The bar follows `.tint` placed after `.toolbar`.
 - **Forgetting sheets.** They have a gutter, toolbars and ink of their own.
+- **Adding a tap gesture to list rows.** It swallows taps on the row's text and icon. After any change to a list, tap a row on its words.
 - **Reporting a simulator-only blank paint as a bug.** Confirm on a device first.
 - **Calling Duo APIs outside `DuoAPIs.swift`.** A build without the iOS 27.1 SDK then fails.

@@ -297,9 +297,10 @@ The iPad layout often comes from pushing phone pages into the detail column. On 
 
 - A destination chosen in the sidebar has a back button. Hide it: the sidebar already leads everywhere it would.
 - `.searchable` on the split view puts the field in the sidebar. Put it on the page being searched.
-- Tapping the row that is already selected does nothing, so the user cannot leave the pushed page. Clear the pushed page on the tap.
+- Tapping the row that is already selected does nothing, so the user cannot leave the pushed page. Do not fix this with a tap gesture on the rows: it swallows taps on a row's text and icon, and only the empty part of the row still selects. Do not fix it by clearing the selection either: the system empties the detail's pushed pages whenever the sidebar's selection changes, so the page closes at once.
+- The fix is to stop pushing. Make the destination a detail page of its own: a flag says it is showing, the detail's root view draws it, and no row is selected while it shows. Any row is then a change of selection, and choosing one clears the flag.
 
-> **Shopa.** Community was a page pushed over the selected list. It is now treated as a sidebar choice: highlighted while open, no back button, its own search, and any list row leaves it.
+> **Shopa.** Community was a page pushed over the selected list. A first fix added a tap gesture to the list rows to leave it. That shipped to review with rows that only responded on their empty space, and had to be withdrawn. Community is now the detail's own page: highlighted while open, no list selected, no back button, its own search, and any list row leaves it.
 
 ### Rule 19: One owner for a heavy view
 
@@ -359,6 +360,7 @@ APIs used (iOS 27.0 and 27.1):
 - **Get it running early, then let the owner use it.** Reading the code finds some faults. Five minutes of use finds others that no search will: a control in the wrong place, a colour that is off, a page that never loads. Build a rough version, hand it over, and polish after.
 - **Check the project can resize at all.** It needs a launch screen, all four orientations on iPad, and no `UIRequiresFullScreen`. Xcode's `app-resizability` skill runs these three checks.
 - **Check every posture again after each fix.** A fix made for the open screen often leaves the closed one behind.
+- **Tap the words, not the gap.** After any change to a list or a sidebar, tap a row on its text and on its icon. A row can keep working on its empty space while its content is dead.
 - **Wait for the app to finish loading before you tap.** A tap that lands on a loading screen looks like a broken button.
 - **Add a launch argument that forces the layout** (`--layout compact` or `--layout wide`). UI tests and screenshots then need no real fold.
 - **Build signed.** An app with iCloud or other entitlements crashes at launch when built with code signing switched off.
@@ -417,7 +419,8 @@ Folding
 Split view
 - [ ] A destination chosen in the sidebar has no back button
 - [ ] Search is attached to the page it searches, not to the split view
-- [ ] Tapping the selected sidebar row leaves a pushed page
+- [ ] A sidebar destination is the detail's own page, not pushed over a selected row
+- [ ] No tap gesture sits on a list row; every row responds on its text and its icon
 
 Insets
 - [ ] No `2 * inset` anywhere
