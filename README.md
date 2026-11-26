@@ -23,10 +23,14 @@ Read [PLAYBOOK.md](skills/duo-layout/PLAYBOOK.md), then work down its checklist.
 
 ## Point your agent at it
 
-Clone this repo, then copy or link the skill folder into your agent's skills folder. For Claude Code:
+Clone this repo, then copy the skill folder into your agent's skills folder. For Claude Code:
 
 ```bash
-cp -R skills/duo-layout ~/.claude/skills/duo-layout
+git clone https://github.com/jmaorr/duo-layout.git
+```
+
+```bash
+cp -R duo-layout/skills/duo-layout ~/.claude/skills/duo-layout
 ```
 
 Then ask: "Use the duo-layout skill to adapt this app for the iPhone Duo."
